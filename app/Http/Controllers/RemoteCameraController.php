@@ -30,15 +30,20 @@ class RemoteCameraController extends Controller
                 'deviceName' => 'required',
             ]);
 
-            broadcast(new RemoteGuestDiscovery(
-                $request->networkId,
-                $request->deviceId,
-                $request->deviceName
-            ));
+            try {
+                broadcast(new RemoteGuestDiscovery(
+                    $request->networkId,
+                    $request->deviceId,
+                    $request->deviceName
+                ));
+            } catch (\Exception $broadcastException) {
+                \Illuminate\Support\Facades\Log::warning('Broadcast failed but continuing: ' . $broadcastException->getMessage());
+                // Silently continue so the app doesn't crash if Pusher is down
+            }
             
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Broadcast failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Ping process failed: ' . $e->getMessage());
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
